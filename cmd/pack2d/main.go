@@ -49,6 +49,7 @@ func resolveVersion() string {
 func main() {
 	if len(os.Args) < 2 {
 		printUsage(os.Stderr)
+		fmt.Fprintln(os.Stderr, "\nRun \"pack2d help\" for usage.")
 		os.Exit(1)
 	}
 	switch os.Args[1] {
@@ -62,6 +63,8 @@ func main() {
 		runInspect(os.Args[2:])
 	case "version":
 		runVersion(os.Args[2:])
+	case "help", "-h", "--help":
+		runHelp(os.Args[2:])
 	default:
 		fmt.Fprintf(os.Stderr, "pack2d: unknown command %q\n", os.Args[1])
 		printUsage(os.Stderr)
@@ -73,11 +76,63 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "Usage: pack2d <command> [options]")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Commands:")
-	fmt.Fprintln(w, "  encode   Encode input data to a pack2d base45 string")
-	fmt.Fprintln(w, "  decode   Decode a pack2d base45 string to original data")
+	fmt.Fprintln(w, "  encode   Compress and base45-encode a payload")
+	fmt.Fprintln(w, "  decode   Decode a base45 string back to original data")
 	fmt.Fprintln(w, "  barcode  Encode data and generate a barcode image")
-	fmt.Fprintln(w, "  inspect  Inspect a pack2d encoded string metadata")
-	fmt.Fprintln(w, "  version  Print version information")
+	fmt.Fprintln(w, "  inspect  Show header metadata and barcode feasibility")
+	fmt.Fprintln(w, "  version  Print version and platform information")
+	fmt.Fprintln(w, "  help     Show this help or options for a specific command")
+}
+
+func runHelp(args []string) {
+	if len(args) == 0 {
+		printUsage(os.Stdout)
+		fmt.Fprintln(os.Stdout, "\nRun \"pack2d help <command>\" for options of a specific command.")
+		return
+	}
+	switch args[0] {
+	case "encode":
+		printCommandHelp("encode", "Compress and base45-encode a payload.", func(fs *flag.FlagSet) {
+			fs.String("input", "", "input file (default: stdin)")
+			fs.String("t", "raw", "input type: raw, json")
+			fs.Bool("q", false, "suppress stats output")
+		})
+	case "decode":
+		printCommandHelp("decode", "Decode a base45 string back to original data.", func(fs *flag.FlagSet) {
+			fs.String("input", "", "input file (default: stdin)")
+			fs.Bool("q", false, "suppress stats output")
+		})
+	case "barcode":
+		printCommandHelp("barcode", "Encode data and generate a barcode image.", func(fs *flag.FlagSet) {
+			fs.String("input", "", "input file (default: stdin)")
+			fs.String("t", "raw", "input type: raw, json")
+			fs.String("b", "qrcode", "barcode type: qrcode, datamatrix")
+			fs.String("f", "png", "image format: png, svg")
+			fs.String("o", "", "output file (required)")
+			fs.Int("s", 256, "image size in pixels")
+			fs.Bool("q", false, "suppress stats output")
+		})
+	case "inspect":
+		printCommandHelp("inspect", "Show header metadata and barcode feasibility.", func(fs *flag.FlagSet) {
+			fs.String("input", "", "input file (default: stdin)")
+		})
+	case "version":
+		printCommandHelp("version", "Print version and platform information.", nil)
+	default:
+		fmt.Fprintf(os.Stderr, "pack2d help: unknown command %q\n", args[0])
+		os.Exit(1)
+	}
+}
+
+func printCommandHelp(name, desc string, setup func(*flag.FlagSet)) {
+	fmt.Fprintf(os.Stdout, "Usage: pack2d %s [options]\n\n%s\n", name, desc)
+	if setup != nil {
+		fs := flag.NewFlagSet(name, flag.ContinueOnError)
+		fs.SetOutput(os.Stdout)
+		setup(fs)
+		fmt.Fprintln(os.Stdout, "\nOptions:")
+		fs.PrintDefaults()
+	}
 }
 
 func runEncode(args []string) {
