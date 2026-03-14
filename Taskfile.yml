@@ -1,0 +1,113 @@
+version: '3'
+
+vars:
+  BINARY: pack2d
+  BIN_DIR: bin
+  MODULE: github.com/gemineo/pack2d
+  VERSION:
+    sh: git describe --tags --always --dirty 2>/dev/null || echo "dev"
+  LDFLAGS: -X main.version={{.VERSION}}
+  FUZZ_TIME: 30s
+
+tasks:
+  build:
+    desc: Build the CLI binary into bin/ with version injection
+    cmds:
+      - mkdir -p {{.BIN_DIR}}
+      - go build -ldflags "{{.LDFLAGS}}" -o {{.BIN_DIR}}/{{.BINARY}} ./cmd/{{.BINARY}}
+
+  test:
+    desc: Run all tests
+    cmds:
+      - go test ./...
+
+  test:race:
+    desc: Run all tests with the race detector
+    cmds:
+      - go test -race ./...
+
+  test:pkg:
+    desc: "Test a single package — usage: task test:pkg PKG=./codec/..."
+    cmds:
+      - go test {{.PKG}}
+    requires:
+      vars: [PKG]
+
+  test:run:
+    desc: "Run a single test — usage: task test:run NAME=TestRoundTrip PKG=."
+    cmds:
+      - go test -run {{.NAME}} -v {{.PKG}}
+    requires:
+      vars: [NAME, PKG]
+
+  fuzz:header:
+    desc: Fuzz codec.UnpackHeader for {{.FUZZ_TIME}}
+    cmds:
+      - go test -fuzz=FuzzUnpackHeader -fuzztime={{.FUZZ_TIME}} ./codec/...
+
+  fuzz:base45:
+    desc: Fuzz encoding.Base45Decode for {{.FUZZ_TIME}}
+    cmds:
+      - go test -fuzz=FuzzBase45Decode -fuzztime={{.FUZZ_TIME}} ./encoding/...
+
+  fuzz:decode:
+    desc: Fuzz pack2d.Decode for {{.FUZZ_TIME}}
+    cmds:
+      - go test -fuzz=FuzzDecode -fuzztime={{.FUZZ_TIME}} .
+
+  fuzz:
+    desc: Run all fuzz targets sequentially for {{.FUZZ_TIME}} each
+    cmds:
+      - task: fuzz:header
+      - task: fuzz:base45
+      - task: fuzz:decode
+
+  bench:
+    desc: Run benchmarks for the compress package
+    cmds:
+      - go test -bench=. -benchmem ./compress/...
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run ./...
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  fmt:
+    desc: Format all source files (goimports + gofmt)
+    cmds:
+      - goimports -w .
+      - gofmt -w .
+
+  fmt:check:
+    desc: Check formatting without modifying files (for CI)
+    cmds:
+      - test -z "$(goimports -l .)"
+
+  tidy:
+    desc: Tidy go.mod / go.sum
+    cmds:
+      - go mod tidy
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -rf {{.BIN_DIR}}
+
+  ci:
+    desc: Full CI pipeline — format check, vet, race tests, lint
+    cmds:
+      - task: fmt:check
+      - task: vet
+      - task: test:race
+      - task: lint
+
+  default:
+    desc: List all available tasks
+    cmds:
+      - task --list
+    silent: true

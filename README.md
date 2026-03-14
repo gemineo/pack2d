@@ -111,6 +111,8 @@ Stats are written to stderr; encoded/decoded data goes to stdout. Use `-q` / `--
 
 Exit codes: `0` success, `1` user error, `2` system/I/O error.
 
+`pack2d version` prints the binary version and OS/arch, e.g. `pack2d v0.2.0 (linux/amd64)`. When built from source without `-ldflags`, the version is derived from the module VCS metadata.
+
 ## Sub-packages
 
 All sub-packages are public and independently importable:

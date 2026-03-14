@@ -6,11 +6,45 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
+	"runtime/debug"
 
 	"github.com/gemineo/pack2d"
 )
 
-const version = "0.1.0"
+var version = "dev" // overridden by -ldflags "-X main.version=..."
+
+func resolveVersion() string {
+	if version != "dev" {
+		return version
+	}
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "dev"
+	}
+	if v := info.Main.Version; v != "" && v != "(devel)" {
+		return v
+	}
+	var commit, dirty string
+	for _, s := range info.Settings {
+		switch s.Key {
+		case "vcs.revision":
+			if len(s.Value) >= 7 {
+				commit = s.Value[:7]
+			} else {
+				commit = s.Value
+			}
+		case "vcs.modified":
+			if s.Value == "true" {
+				dirty = "-dirty"
+			}
+		}
+	}
+	if commit != "" {
+		return "dev-" + commit + dirty
+	}
+	return "dev"
+}
 
 func main() {
 	if len(os.Args) < 2 {
@@ -171,7 +205,7 @@ func runInspect(args []string) {
 }
 
 func runVersion(_ []string) {
-	fmt.Printf("pack2d version %s\n", version)
+	fmt.Printf("pack2d %s (%s/%s)\n", resolveVersion(), runtime.GOOS, runtime.GOARCH)
 }
 
 func readInput(path string, fs *flag.FlagSet) []byte {
