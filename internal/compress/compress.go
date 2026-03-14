@@ -61,9 +61,14 @@ func (r *Registry) GetByName(name string) (Compressor, error) {
 	return c, nil
 }
 
-// DefaultRegistry returns a Registry pre-loaded with the zlib compressor at default compression level.
+// DefaultRegistry returns a Registry pre-loaded with zlib, zstd, and brotli compressors.
 func DefaultRegistry() *Registry {
 	r := NewRegistry()
 	r.Register(NewZlib(-1))
+	// NewZstd can only fail if the zstd library fails to initialize, which is not recoverable.
+	if zstdComp, err := NewZstd(3, nil); err == nil {
+		r.Register(zstdComp)
+	}
+	r.Register(NewBrotli(6))
 	return r
 }

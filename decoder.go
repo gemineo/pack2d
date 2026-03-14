@@ -28,7 +28,7 @@ func NewDecoder(opts ...Option) *Decoder {
 // Pipeline:
 //  1. Base45 decode
 //  2. Unpack header
-//  3. Decompress
+//  3. Decompress (with dictionary if DCT bit is set)
 //  4. Deserialize
 func (d *Decoder) Decode(encoded string) ([]byte, Stats, error) {
 	// 1. Base45 decode
@@ -43,19 +43,30 @@ func (d *Decoder) Decode(encoded string) ([]byte, Stats, error) {
 		return nil, Stats{}, fmt.Errorf("%w: header: %v", ErrDecodeFailed, err)
 	}
 
-	// Dictionary support is Phase 2
-	if h.Dictionary {
-		return nil, Stats{}, fmt.Errorf("%w: dictionary-encoded payloads not supported in Phase 1", ErrDictionaryNotFound)
-	}
-
 	compressed := raw[offset:]
 
-	// 3. Decompress
-	cmpReg := compress.DefaultRegistry()
-	comp, err := cmpReg.Get(h.Compression)
-	if err != nil {
-		return nil, Stats{}, fmt.Errorf("%w: %v", ErrUnknownCompression, err)
+	// 3. Decompress — resolve dictionary if DCT bit is set
+	var comp compress.Compressor
+	if h.Dictionary {
+		if d.cfg.dictStore == nil {
+			return nil, Stats{}, fmt.Errorf("%w: no dictionary store configured", ErrDictionaryNotFound)
+		}
+		entry, derr := d.cfg.dictStore.Get(h.DictionaryID)
+		if derr != nil {
+			return nil, Stats{}, fmt.Errorf("%w: id=%d: %v", ErrDictionaryNotFound, h.DictionaryID, derr)
+		}
+		comp, err = compress.NewZstd(3, entry.Data)
+		if err != nil {
+			return nil, Stats{}, fmt.Errorf("%w: build zstd with dict: %v", ErrDecodeFailed, err)
+		}
+	} else {
+		cmpReg := compress.DefaultRegistry()
+		comp, err = cmpReg.Get(h.Compression)
+		if err != nil {
+			return nil, Stats{}, fmt.Errorf("%w: %v", ErrUnknownCompression, err)
+		}
 	}
+
 	decompressed, err := comp.DecompressBytes(compressed)
 	if err != nil {
 		return nil, Stats{}, fmt.Errorf("%w: decompress: %v", ErrDecodeFailed, err)

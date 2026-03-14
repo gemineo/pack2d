@@ -55,10 +55,15 @@ func (r *Registry) GetByName(name string) (Serializer, error) {
 	return s, nil
 }
 
-// DefaultRegistry returns a Registry pre-loaded with raw and JSON serializers.
+// DefaultRegistry returns a Registry pre-loaded with raw, JSON, XML, and CBOR serializers.
 func DefaultRegistry() *Registry {
 	r := NewRegistry()
 	r.Register(NewRawSerializer())
 	r.Register(NewJSONSerializer())
+	r.Register(NewXMLSerializer())
+	// NewCBORSerializer can only fail if cbor enc/dec mode creation fails, which is not recoverable.
+	if cborSer, err := NewCBORSerializer(); err == nil {
+		r.Register(cborSer)
+	}
 	return r
 }

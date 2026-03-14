@@ -55,17 +55,34 @@ tasks:
     cmds:
       - go test -fuzz=FuzzDecode -fuzztime={{.FUZZ_TIME}} .
 
+  fuzz:zstd:
+    desc: Fuzz zstd decompress for {{.FUZZ_TIME}}
+    cmds:
+      - go test -fuzz=FuzzZstdDecompress -fuzztime={{.FUZZ_TIME}} ./internal/compress/...
+
+  fuzz:brotli:
+    desc: Fuzz brotli decompress for {{.FUZZ_TIME}}
+    cmds:
+      - go test -fuzz=FuzzBrotliDecompress -fuzztime={{.FUZZ_TIME}} ./internal/compress/...
+
   fuzz:
     desc: Run all fuzz targets sequentially for {{.FUZZ_TIME}} each
     cmds:
       - task: fuzz:header
       - task: fuzz:base45
       - task: fuzz:decode
+      - task: fuzz:zstd
+      - task: fuzz:brotli
 
   bench:
     desc: Run benchmarks for the compress package
     cmds:
-      - go test -bench=. -benchmem ./compress/...
+      - go test -bench=. -benchmem ./internal/compress/...
+
+  bench:compress:
+    desc: Run BenchmarkCompress for all compressors
+    cmds:
+      - go test -bench=BenchmarkCompress -benchmem -run='^$' ./internal/compress/...
 
   lint:
     desc: Run golangci-lint
