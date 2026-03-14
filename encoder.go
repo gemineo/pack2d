@@ -3,11 +3,11 @@ package pack2d
 import (
 	"fmt"
 
-	"github.com/gemineo/pack2d/codec"
-	"github.com/gemineo/pack2d/compress"
-	"github.com/gemineo/pack2d/encoding"
-	"github.com/gemineo/pack2d/serial"
-	"github.com/gemineo/pack2d/textenc"
+	"github.com/gemineo/pack2d/internal/codec"
+	"github.com/gemineo/pack2d/internal/compress"
+	"github.com/gemineo/pack2d/internal/encoding"
+	"github.com/gemineo/pack2d/internal/serial"
+	"github.com/gemineo/pack2d/internal/textenc"
 )
 
 // Encoder compresses and encodes data into a pack2d base45 string.

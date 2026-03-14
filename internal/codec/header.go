@@ -10,11 +10,12 @@ var ErrInvalidHeader = errors.New("codec: invalid header")
 // Header represents the decoded pack2d header.
 //
 // Header byte layout:
-//   Bits 7-6: VER  (0b00 = v1)
-//   Bits 5-4: CMP  (0b00=zlib, 0b01=zstd, 0b10=brotli, 0b11=reserved)
-//   Bit  3:   DCT  (0=no dict, 1=dict → 2-byte dict ID follows)
-//   Bits 2-0: SER  (0b000=raw, 0b001=json, 0b010=xml, 0b011=cbor)
-//   0xFF      = extension marker (unsupported, return error)
+//
+//	Bits 7-6: VER  (0b00 = v1)
+//	Bits 5-4: CMP  (0b00=zlib, 0b01=zstd, 0b10=brotli, 0b11=reserved)
+//	Bit  3:   DCT  (0=no dict, 1=dict → 2-byte dict ID follows)
+//	Bits 2-0: SER  (0b000=raw, 0b001=json, 0b010=xml, 0b011=cbor)
+//	0xFF      = extension marker (unsupported, return error)
 type Header struct {
 	Version       uint8
 	Compression   uint8

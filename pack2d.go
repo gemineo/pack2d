@@ -3,9 +3,9 @@ package pack2d
 import (
 	"fmt"
 
-	"github.com/gemineo/pack2d/barcode"
-	"github.com/gemineo/pack2d/codec"
-	"github.com/gemineo/pack2d/encoding"
+	"github.com/gemineo/pack2d/internal/barcode"
+	"github.com/gemineo/pack2d/internal/codec"
+	"github.com/gemineo/pack2d/internal/encoding"
 )
 
 // Encode is a package-level convenience wrapper around NewEncoder(opts...).Encode(data).

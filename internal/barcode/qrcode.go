@@ -98,4 +98,3 @@ func checkQRFeasibility(data string, opts Options) FeasibilityResult {
 		SymbolVersion:       q.VersionNumber,
 	}
 }
-
