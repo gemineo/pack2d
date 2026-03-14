@@ -106,6 +106,7 @@ cat patient.json | pack2d encode -t json -q | pack2d barcode --pre-encoded -b qr
 | `barcode` | Encode and generate a barcode image in one step |
 | `inspect` | Show header metadata and barcode feasibility |
 | `version` | Print version information |
+| `help` | Show command list or options for a specific command |
 
 Stats are written to stderr; encoded/decoded data goes to stdout. Use `-q` / `--quiet` to suppress stats for piping.
 
@@ -113,19 +114,15 @@ Exit codes: `0` success, `1` user error, `2` system/I/O error.
 
 `pack2d version` prints the binary version and OS/arch, e.g. `pack2d v0.2.0 (linux/amd64)`. When built from source without `-ldflags`, the version is derived from the module VCS metadata.
 
-## Sub-packages
+## Extension points
 
-All sub-packages are public and independently importable:
+The `dict` package is publicly importable for consumers that need a custom dictionary store:
 
 ```go
-import "github.com/gemineo/pack2d/compress"  // Compressor interface + zlib
-import "github.com/gemineo/pack2d/barcode"   // Generator interface + QR + DataMatrix
-import "github.com/gemineo/pack2d/codec"     // Header byte pack/unpack
-import "github.com/gemineo/pack2d/dict"      // Dictionary Store interface + MemoryStore
-import "github.com/gemineo/pack2d/encoding"  // Base45 encode/decode
-import "github.com/gemineo/pack2d/serial"    // Serializer interface + raw + JSON
-import "github.com/gemineo/pack2d/textenc"   // UTF-8 normalization
+import "github.com/gemineo/pack2d/dict"  // Dictionary Store interface + MemoryStore
 ```
 
-Each component (`Compressor`, `Serializer`, `Generator`, `dict.Store`) is an interface — custom implementations can be registered without modifying library code.
+Implement `dict.Store` and pass it via `WithDictStore(store)` to plug in a custom backend (e.g. filesystem, database).
+
+All other sub-packages (`codec`, `compress`, `encoding`, `serial`, `barcode`, `textenc`) are under `internal/` and are not part of the public API.
 
