@@ -83,3 +83,9 @@ func WithQuietZone(qz int) Option {
 func WithDictStore(s dict.Store) Option {
 	return func(c *config) { c.dictStore = s }
 }
+
+// WithDictionary sets a pre-trained compression dictionary.
+// The dictionary ID is embedded in the header. Only meaningful with WithCompression(Zstd).
+func WithDictionary(d *dict.Dictionary) Option {
+	return func(c *config) { c.dictionary = d }
+}

@@ -89,3 +89,121 @@ func TestQRCodeAllECLevels(t *testing.T) {
 		assert.True(t, bytes.HasPrefix(data, []byte("\x89PNG")), "level=%s", level)
 	}
 }
+
+// Generator interface methods
+
+func TestGeneratorType(t *testing.T) {
+	assert.Equal(t, QRCode, NewQRCodeGenerator().Type())
+	assert.Equal(t, DataMatrix, NewDataMatrixGenerator().Type())
+}
+
+func TestGeneratorMaxCapacity(t *testing.T) {
+	opts := DefaultOptions()
+
+	qrCap := NewQRCodeGenerator().MaxCapacity(opts)
+	assert.Greater(t, qrCap, 0)
+
+	dmCap := NewDataMatrixGenerator().MaxCapacity(opts)
+	assert.Greater(t, dmCap, 0)
+}
+
+func TestQRCodeMaxCapacityAllLevels(t *testing.T) {
+	g := NewQRCodeGenerator()
+	for _, level := range []ECLevel{ECLow, ECMedium, ECQuarter, ECHigh} {
+		opts := DefaultOptions()
+		opts.ErrorCorrection = level
+		cap := g.MaxCapacity(opts)
+		assert.Greater(t, cap, 0, "level=%s", level)
+	}
+	// Unknown level falls back to medium
+	opts := DefaultOptions()
+	opts.ErrorCorrection = ECLevel("X")
+	cap := g.MaxCapacity(opts)
+	assert.Equal(t, g.MaxCapacity(DefaultOptions()), cap)
+}
+
+// Error paths in Generate
+
+func TestQRCodeUnsupportedFormat(t *testing.T) {
+	g := NewQRCodeGenerator()
+	opts := DefaultOptions()
+	opts.ImageFormat = ImageFormat("webp")
+	_, err := g.Generate(testData, opts)
+	assert.Error(t, err)
+}
+
+func TestQRCodeUnknownECLevel(t *testing.T) {
+	g := NewQRCodeGenerator()
+	opts := DefaultOptions()
+	opts.ErrorCorrection = ECLevel("Z")
+	_, err := g.Generate(testData, opts)
+	assert.Error(t, err)
+}
+
+func TestDataMatrixUnsupportedFormat(t *testing.T) {
+	g := NewDataMatrixGenerator()
+	opts := DefaultOptions()
+	opts.ImageFormat = ImageFormat("webp")
+	_, err := g.Generate(testData, opts)
+	assert.Error(t, err)
+}
+
+// CheckFeasibility edge cases
+
+func TestCheckFeasibilityUnknownBarcodeType(t *testing.T) {
+	result := CheckFeasibility(testData, BarcodeType("unknown"), DefaultOptions())
+	assert.False(t, result.Feasible)
+	assert.Equal(t, 0, result.MaxCapacity)
+}
+
+func TestCheckFeasibilityQRUnknownECLevel(t *testing.T) {
+	opts := DefaultOptions()
+	opts.ErrorCorrection = ECLevel("Z")
+	result := CheckFeasibility(testData, QRCode, opts)
+	// mapECLevel fails → returns zero FeasibilityResult
+	assert.False(t, result.Feasible)
+	assert.Equal(t, 0, result.MaxCapacity)
+}
+
+func TestCheckFeasibilityCapacityPercent(t *testing.T) {
+	opts := DefaultOptions()
+	data := strings.Repeat("A", 10)
+	result := CheckFeasibility(data, QRCode, opts)
+	assert.True(t, result.Feasible)
+	assert.Greater(t, result.CapacityUsedPercent, 0.0)
+	assert.Less(t, result.CapacityUsedPercent, 100.0)
+}
+
+// SVG quiet-zone = 0 (disables border on QR)
+
+func TestQRCodeSVGNoQuietZone(t *testing.T) {
+	g := NewQRCodeGenerator()
+	opts := DefaultOptions()
+	opts.ImageFormat = SVG
+	opts.QuietZone = 0
+	data, err := g.Generate(testData, opts)
+	require.NoError(t, err)
+	assert.True(t, strings.HasPrefix(string(data), "<svg"))
+}
+
+// Small size (forces moduleSize = 1 in SVG generation)
+
+func TestQRCodeSVGTinySize(t *testing.T) {
+	g := NewQRCodeGenerator()
+	opts := DefaultOptions()
+	opts.ImageFormat = SVG
+	opts.Size = 1
+	data, err := g.Generate(testData, opts)
+	require.NoError(t, err)
+	assert.True(t, strings.HasPrefix(string(data), "<svg"))
+}
+
+func TestDataMatrixSVGTinySize(t *testing.T) {
+	g := NewDataMatrixGenerator()
+	opts := DefaultOptions()
+	opts.ImageFormat = SVG
+	opts.Size = 1
+	data, err := g.Generate(testData, opts)
+	require.NoError(t, err)
+	assert.True(t, strings.HasPrefix(string(data), "<svg"))
+}

@@ -28,8 +28,8 @@ func NewEncoder(opts ...Option) *Encoder {
 //
 // Pipeline:
 //  1. Normalize to UTF-8 via textenc
-//  2. Serialize (e.g. JSON minification)
-//  3. Compress
+//  2. Serialize (e.g. JSON minification, CBOR conversion)
+//  3. Compress (optionally with a zstd dictionary)
 //  4. Prepend header bytes
 //  5. Base45 encode
 func (e *Encoder) Encode(data []byte) (string, Stats, error) {
@@ -56,11 +56,19 @@ func (e *Encoder) Encode(data []byte) (string, Stats, error) {
 		return "", Stats{}, fmt.Errorf("pack2d encode: serialize: %w", err)
 	}
 
-	// 3. Compress
-	cmpReg := compress.DefaultRegistry()
-	comp, err := cmpReg.GetByName(string(e.cfg.compression))
-	if err != nil {
-		return "", Stats{}, fmt.Errorf("%w: %v", ErrUnknownCompression, err)
+	// 3. Compress — use a dictionary-aware zstd compressor if a dictionary is set
+	var comp compress.Compressor
+	if e.cfg.dictionary != nil {
+		comp, err = compress.NewZstd(e.cfg.compressionLevel, e.cfg.dictionary.Data)
+		if err != nil {
+			return "", Stats{}, fmt.Errorf("pack2d encode: build zstd with dict: %w", err)
+		}
+	} else {
+		cmpReg := compress.DefaultRegistry()
+		comp, err = cmpReg.GetByName(string(e.cfg.compression))
+		if err != nil {
+			return "", Stats{}, fmt.Errorf("%w: %v", ErrUnknownCompression, err)
+		}
 	}
 	compressed, err := comp.CompressBytes(serialized)
 	if err != nil {
@@ -68,10 +76,15 @@ func (e *Encoder) Encode(data []byte) (string, Stats, error) {
 	}
 
 	// 4. Build and prepend header
+	var dID uint16
+	if e.cfg.dictionary != nil {
+		dID = e.cfg.dictionary.ID
+	}
 	h := codec.Header{
 		Version:       0,
 		Compression:   comp.ID(),
-		Dictionary:    false,
+		Dictionary:    e.cfg.dictionary != nil,
+		DictionaryID:  dID,
 		Serialization: ser.ID(),
 	}
 	header := codec.PackHeader(h)

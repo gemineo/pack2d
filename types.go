@@ -14,6 +14,7 @@ const (
 	Raw  InputType = "raw"
 	JSON InputType = "json"
 	XML  InputType = "xml"
+	CBOR InputType = "cbor"
 )
 
 // CompressionType identifies the compression algorithm.

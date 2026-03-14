@@ -63,3 +63,49 @@ func TestRegistryGetByName(t *testing.T) {
 	_, err = r.GetByName("unknown")
 	assert.Error(t, err)
 }
+
+func TestRegistryGetByID(t *testing.T) {
+	r := DefaultRegistry()
+
+	s, err := r.Get(0x00)
+	require.NoError(t, err)
+	assert.Equal(t, "raw", s.Name())
+
+	s, err = r.Get(0x01)
+	require.NoError(t, err)
+	assert.Equal(t, "json", s.Name())
+
+	_, err = r.Get(0xFF)
+	assert.ErrorIs(t, err, ErrUnknownSerializer)
+}
+
+func TestDefaultRegistryContainsAllSerializers(t *testing.T) {
+	r := DefaultRegistry()
+	for _, tt := range []struct {
+		id   byte
+		name string
+	}{
+		{0x00, "raw"},
+		{0x01, "json"},
+		{0x02, "xml"},
+		{0x03, "cbor"},
+	} {
+		s, err := r.Get(tt.id)
+		require.NoError(t, err, "id=0x%02X", tt.id)
+		assert.Equal(t, tt.name, s.Name())
+
+		s, err = r.GetByName(tt.name)
+		require.NoError(t, err, "name=%q", tt.name)
+		assert.Equal(t, tt.id, s.ID())
+	}
+}
+
+func TestRegistryRegisterOverwrites(t *testing.T) {
+	r := NewRegistry()
+	r.Register(NewRawSerializer())
+	r.Register(NewRawSerializer()) // register twice — must not panic
+
+	s, err := r.Get(0x00)
+	require.NoError(t, err)
+	assert.Equal(t, "raw", s.Name())
+}
