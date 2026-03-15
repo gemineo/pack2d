@@ -12,6 +12,12 @@ var ErrNotFound = errors.New("dict: dictionary not found")
 // ErrDuplicateID is returned when a dictionary with the same ID already exists.
 var ErrDuplicateID = errors.New("dict: duplicate dictionary ID")
 
+// ErrIDExhausted is returned when all 65535 dictionary IDs are in use.
+var ErrIDExhausted = errors.New("dict: all dictionary IDs exhausted (max 65535)")
+
+// ErrInvalidName is returned when a dictionary name contains path separators or is otherwise invalid.
+var ErrInvalidName = errors.New("dict: invalid dictionary name")
+
 // Dictionary holds a compression dictionary and its metadata.
 type Dictionary struct {
 	ID          uint16

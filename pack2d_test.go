@@ -444,6 +444,44 @@ func TestEncodeStatsZeroInput(t *testing.T) {
 	assert.Equal(t, 0.0, stats.CompressionRatio)
 }
 
+func TestDecodeStatsConsistentWithEncode(t *testing.T) {
+	data := []byte(strings.Repeat("x", 100))
+	encoded, encStats, err := Encode(data)
+	require.NoError(t, err)
+
+	_, decStats, err := Decode(encoded)
+	require.NoError(t, err)
+
+	// InputBytes in both should be the uncompressed data size
+	assert.Equal(t, encStats.InputBytes, decStats.InputBytes,
+		"InputBytes should represent uncompressed data size in both encode and decode")
+	// EncodedBytes in both should be the base45 string size
+	assert.Equal(t, encStats.EncodedBytes, decStats.EncodedBytes,
+		"EncodedBytes should represent base45 string size in both encode and decode")
+	// CompressedBytes should match
+	assert.Equal(t, encStats.CompressedBytes, decStats.CompressedBytes,
+		"CompressedBytes should be the same compressed payload")
+	// CompressionRatio should be the same
+	assert.InDelta(t, encStats.CompressionRatio, decStats.CompressionRatio, 0.01,
+		"CompressionRatio should be consistent")
+}
+
+func TestInspectUnknownSerializationID(t *testing.T) {
+	encoded, _, err := Encode([]byte("test"))
+	require.NoError(t, err)
+
+	// Patch the header to set SER to 0x07 (unknown)
+	raw, err := encoding.Base45Decode(encoded)
+	require.NoError(t, err)
+	patched := make([]byte, len(raw))
+	copy(patched, raw)
+	patched[0] = (patched[0] & 0xF8) | 0x07
+
+	result, err := Inspect(encoding.Base45Encode(patched))
+	require.NoError(t, err)
+	assert.Equal(t, "unknown(7)", result.Serialization)
+}
+
 func min(a, b int) int {
 	if a < b {
 		return a

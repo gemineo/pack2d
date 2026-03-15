@@ -56,6 +56,9 @@ func (b *brotliCompressor) CompressBytes(data []byte) ([]byte, error) {
 }
 
 func (b *brotliCompressor) DecompressBytes(data []byte) ([]byte, error) {
+	if len(data) == 0 {
+		return []byte{}, nil
+	}
 	var buf bytes.Buffer
 	if err := b.Decompress(&buf, bytes.NewReader(data)); err != nil {
 		return nil, err

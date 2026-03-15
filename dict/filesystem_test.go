@@ -190,6 +190,43 @@ func TestFilesystemStoreDeleteReadOnlyDir(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestFilesystemStoreNextIDExhausted(t *testing.T) {
+	dir := t.TempDir()
+	// Write a metadata file with the max ID prefix.
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "65535_max.json"), []byte(`{"id":65535}`), 0o644))
+
+	store, err := NewFilesystemStore(dir)
+	require.NoError(t, err)
+
+	_, err = store.NextID()
+	assert.ErrorIs(t, err, ErrIDExhausted)
+}
+
+func TestFilesystemStoreSaveInvalidName(t *testing.T) {
+	dir := t.TempDir()
+	store, err := NewFilesystemStore(dir)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name     string
+		dictName string
+	}{
+		{"empty name", ""},
+		{"dot", "."},
+		{"dotdot", ".."},
+		{"path traversal", "../evil"},
+		{"slash", "a/b"},
+		{"backslash", `a\b`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := &Dictionary{Name: tt.dictName, Data: []byte("data"), CreatedAt: time.Now().UTC()}
+			err := store.Save(d)
+			assert.ErrorIs(t, err, ErrInvalidName)
+		})
+	}
+}
+
 func TestFilesystemStoreGetMissingMetaFile(t *testing.T) {
 	dir := t.TempDir()
 	store, err := NewFilesystemStore(dir)

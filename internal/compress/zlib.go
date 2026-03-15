@@ -66,6 +66,9 @@ func (z *zlibCompressor) CompressBytes(data []byte) ([]byte, error) {
 }
 
 func (z *zlibCompressor) DecompressBytes(data []byte) ([]byte, error) {
+	if len(data) == 0 {
+		return []byte{}, nil
+	}
 	var buf bytes.Buffer
 	if err := z.Decompress(&buf, bytes.NewReader(data)); err != nil {
 		return nil, err

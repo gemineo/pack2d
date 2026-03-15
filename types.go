@@ -53,6 +53,11 @@ const (
 )
 
 // Stats holds encoding/decoding statistics.
+// Field semantics are pipeline-stage-based, consistent across encode and decode:
+//   - InputBytes:       uncompressed data size (original input for encode, decoded output for decode)
+//   - CompressedBytes:  compressed payload size (after compression / before decompression)
+//   - EncodedBytes:     base45 string size (output for encode, input for decode)
+//   - CompressionRatio: CompressedBytes / InputBytes (< 1.0 means data got smaller)
 type Stats struct {
 	InputBytes       int
 	CompressedBytes  int

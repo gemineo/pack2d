@@ -39,13 +39,21 @@ func Inspect(encoded string) (*InspectResult, error) {
 		0: "zlib",
 		1: "zstd",
 		2: "brotli",
-		3: "reserved",
 	}
 	serializationNames := map[uint8]string{
 		0: "raw",
 		1: "json",
 		2: "xml",
 		3: "cbor",
+	}
+
+	compName, ok := compressionNames[h.Compression]
+	if !ok {
+		compName = fmt.Sprintf("unknown(%d)", h.Compression)
+	}
+	serName, ok := serializationNames[h.Serialization]
+	if !ok {
+		serName = fmt.Sprintf("unknown(%d)", h.Serialization)
 	}
 
 	preview := string(raw[offset:])
@@ -55,8 +63,8 @@ func Inspect(encoded string) (*InspectResult, error) {
 
 	result := &InspectResult{
 		Header:             fmt.Sprintf("0x%02X", raw[0]),
-		Compression:        compressionNames[h.Compression],
-		Serialization:      serializationNames[h.Serialization],
+		Compression:        compName,
+		Serialization:      serName,
 		HasDictionary:      h.Dictionary,
 		DictionaryID:       h.DictionaryID,
 		Version:            h.Version,

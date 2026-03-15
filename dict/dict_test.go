@@ -8,6 +8,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestMemoryStoreNextIDExhausted(t *testing.T) {
+	store := NewMemoryStore()
+	// Save a dictionary with the max ID
+	d := &Dictionary{
+		ID:   ^uint16(0), // 65535
+		Name: "max-id",
+		Data: []byte("data"),
+	}
+	require.NoError(t, store.Save(d))
+
+	_, err := store.NextID()
+	assert.ErrorIs(t, err, ErrIDExhausted)
+
+	// Auto-assign should also fail
+	d2 := &Dictionary{Name: "overflow", Data: []byte("data")}
+	err = store.Save(d2)
+	assert.ErrorIs(t, err, ErrIDExhausted)
+}
+
 func TestMemoryStore(t *testing.T) {
 	store := NewMemoryStore()
 

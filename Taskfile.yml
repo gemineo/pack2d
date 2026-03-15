@@ -43,12 +43,12 @@ tasks:
   fuzz:header:
     desc: Fuzz codec.UnpackHeader for {{.FUZZ_TIME}}
     cmds:
-      - go test -fuzz=FuzzUnpackHeader -fuzztime={{.FUZZ_TIME}} ./codec/...
+      - go test -fuzz=FuzzUnpackHeader -fuzztime={{.FUZZ_TIME}} ./internal/codec/...
 
   fuzz:base45:
     desc: Fuzz encoding.Base45Decode for {{.FUZZ_TIME}}
     cmds:
-      - go test -fuzz=FuzzBase45Decode -fuzztime={{.FUZZ_TIME}} ./encoding/...
+      - go test -fuzz=FuzzBase45Decode -fuzztime={{.FUZZ_TIME}} ./internal/encoding/...
 
   fuzz:decode:
     desc: Fuzz pack2d.Decode for {{.FUZZ_TIME}}
@@ -114,6 +114,13 @@ tasks:
     desc: Remove build artifacts
     cmds:
       - rm -rf {{.BIN_DIR}}
+
+  coverage:
+    desc: Generate test coverage report
+    cmds:
+      - go test -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out -o coverage.html
+      - go tool cover -func=coverage.out
 
   ci:
     desc: Full CI pipeline — format check, vet, race tests, lint
