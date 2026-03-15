@@ -84,6 +84,9 @@ func (m *memoryStore) nextIDLocked() (uint16, error) {
 			max = id
 		}
 	}
+	if max == ^uint16(0) {
+		return 0, ErrIDExhausted
+	}
 	return max + 1, nil
 }
 

@@ -154,6 +154,10 @@ func (s *filesystemStore) List() ([]*Dictionary, error) {
 }
 
 func (s *filesystemStore) Save(d *Dictionary) error {
+	if err := validateDictName(d.Name); err != nil {
+		return err
+	}
+
 	if d.ID == 0 {
 		id, err := s.NextID()
 		if err != nil {
@@ -221,5 +225,19 @@ func (s *filesystemStore) NextID() (uint16, error) {
 			maxID = uint16(n)
 		}
 	}
+	if maxID == ^uint16(0) {
+		return 0, ErrIDExhausted
+	}
 	return maxID + 1, nil
+}
+
+// validateDictName rejects names that contain path separators or are otherwise unsafe for use as filenames.
+func validateDictName(name string) error {
+	if name == "" || name == "." || name == ".." {
+		return fmt.Errorf("%w: %q", ErrInvalidName, name)
+	}
+	if strings.ContainsAny(name, `/\`) || filepath.Base(name) != name {
+		return fmt.Errorf("%w: %q must not contain path separators", ErrInvalidName, name)
+	}
+	return nil
 }

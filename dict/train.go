@@ -47,6 +47,7 @@ func Benchmark(samples [][]byte, dictionary []byte) (*BenchmarkResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("dict benchmark: create encoder (no dict): %w", err)
 	}
+	defer encNoDict.Close()
 
 	encWithDict, err := zstd.NewWriter(nil,
 		zstd.WithEncoderLevel(zstd.SpeedDefault),
@@ -55,6 +56,7 @@ func Benchmark(samples [][]byte, dictionary []byte) (*BenchmarkResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("dict benchmark: create encoder (with dict): %w", err)
 	}
+	defer encWithDict.Close()
 
 	r := &BenchmarkResult{SampleCount: len(samples)}
 	for _, s := range samples {

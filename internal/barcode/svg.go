@@ -13,7 +13,7 @@ import (
 // Each dark module becomes a <rect> element.
 func qrToSVG(q *qrlib.QRCode, size, quietZone int) ([]byte, error) {
 	bm := q.Bitmap() // [row][col]bool, true=dark module
-	if len(bm) == 0 {
+	if len(bm) == 0 || len(bm[0]) == 0 {
 		return nil, fmt.Errorf("barcode qrcode svg: empty bitmap")
 	}
 	rows := len(bm)

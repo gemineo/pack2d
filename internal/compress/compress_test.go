@@ -248,3 +248,31 @@ func TestBrotliCompressReadError(t *testing.T) {
 	err := b.Compress(&buf, errReader{})
 	assert.Error(t, err)
 }
+
+// Empty input — all compressors must return ([]byte{}, nil) for consistency.
+
+func TestDecompressBytesEmptyInput(t *testing.T) {
+	tests := []struct {
+		name string
+		comp Compressor
+	}{
+		{"zlib", NewZlib(-1)},
+		{"brotli", NewBrotli(-1)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.comp.DecompressBytes([]byte{})
+			require.NoError(t, err)
+			assert.Equal(t, []byte{}, got)
+		})
+	}
+
+	// zstd separately because NewZstd returns error
+	t.Run("zstd", func(t *testing.T) {
+		c, err := NewZstd(-1, nil)
+		require.NoError(t, err)
+		got, err := c.DecompressBytes([]byte{})
+		require.NoError(t, err)
+		assert.Equal(t, []byte{}, got)
+	})
+}

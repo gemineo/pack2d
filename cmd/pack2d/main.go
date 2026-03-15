@@ -204,11 +204,14 @@ func runDecode(args []string) {
 		os.Exit(2)
 	}
 
-	os.Stdout.Write(decoded)
+	if _, err := os.Stdout.Write(decoded); err != nil {
+		fmt.Fprintf(os.Stderr, "pack2d decode: write stdout: %v\n", err)
+		os.Exit(2)
+	}
 
 	if !*quiet {
 		fmt.Fprintf(os.Stderr, "stats: encoded=%d chars, compressed=%d bytes, output=%d bytes\n",
-			stats.InputBytes, stats.CompressedBytes, len(decoded))
+			stats.EncodedBytes, stats.CompressedBytes, stats.InputBytes)
 	}
 }
 
@@ -336,7 +339,10 @@ func runDictList(args []string) {
 			d.ID, d.Name, len(d.Data), d.SampleCount,
 			d.CreatedAt.Format(time.RFC3339), d.Description)
 	}
-	w.Flush()
+	if err := w.Flush(); err != nil {
+		fmt.Fprintf(os.Stderr, "pack2d dict list: flush: %v\n", err)
+		os.Exit(2)
+	}
 }
 
 func runDictTrain(args []string) {
@@ -439,7 +445,10 @@ func runDictBench(args []string) {
 	fmt.Fprintf(w, "zstd (no dict) bytes\t%d\n", results.ZstdNoDictBytes)
 	fmt.Fprintf(w, "zstd (with dict) bytes\t%d\n", results.ZstdWithDictBytes)
 	fmt.Fprintf(w, "improvement\t%.1f%%\n", results.ImprovementPct)
-	w.Flush()
+	if err := w.Flush(); err != nil {
+		fmt.Fprintf(os.Stderr, "pack2d dict bench: flush: %v\n", err)
+		os.Exit(2)
+	}
 }
 
 func loadSamplesFromDir(dir string) ([][]byte, error) {

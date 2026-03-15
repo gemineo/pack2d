@@ -84,11 +84,11 @@ func (d *Decoder) Decode(encoded string) ([]byte, Stats, error) {
 	}
 
 	stats := Stats{
-		InputBytes:      len(encoded),
+		InputBytes:      len(result),
 		CompressedBytes: len(compressed),
-		EncodedBytes:    len(raw),
+		EncodedBytes:    len(encoded),
 	}
-	if len(encoded) > 0 {
+	if len(result) > 0 {
 		stats.CompressionRatio = float64(len(compressed)) / float64(len(result))
 	}
 
