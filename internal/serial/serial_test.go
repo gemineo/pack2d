@@ -27,6 +27,17 @@ func TestJSONSerializerMinify(t *testing.T) {
 	assert.Equal(t, `{"a":1,"b":"c"}`, string(out))
 }
 
+func TestJSONSerializerDoesNotMutateInput(t *testing.T) {
+	s := NewJSONSerializer()
+	input := []byte(`{  "a" :  1 ,  "b" : "c"  }`)
+	original := make([]byte, len(input))
+	copy(original, input)
+
+	_, err := s.Serialize(input)
+	require.NoError(t, err)
+	assert.Equal(t, original, input, "Serialize must not mutate the input slice")
+}
+
 func TestJSONSerializerInvalidInput(t *testing.T) {
 	s := NewJSONSerializer()
 	_, err := s.Serialize([]byte("not json at all {{{"))

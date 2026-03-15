@@ -16,13 +16,12 @@ func (s *jsonSerializer) ID() byte     { return 0x01 }
 func (s *jsonSerializer) Name() string { return "json" }
 
 func (s *jsonSerializer) Serialize(data []byte) ([]byte, error) {
-	v := jsontext.Value(data)
+	v := make(jsontext.Value, len(data))
+	copy(v, data)
 	if err := v.Compact(); err != nil {
 		return nil, fmt.Errorf("serial json: compact: %w", err)
 	}
-	out := make([]byte, len(v))
-	copy(out, v)
-	return out, nil
+	return []byte(v), nil
 }
 
 func (s *jsonSerializer) Deserialize(data []byte) ([]byte, error) {
