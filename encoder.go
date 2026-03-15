@@ -64,8 +64,7 @@ func (e *Encoder) Encode(data []byte) (string, Stats, error) {
 			return "", Stats{}, fmt.Errorf("pack2d encode: build zstd with dict: %w", err)
 		}
 	} else {
-		cmpReg := compress.DefaultRegistry()
-		comp, err = cmpReg.GetByName(string(e.cfg.compression))
+		comp, err = compress.NewCompressor(string(e.cfg.compression), e.cfg.compressionLevel)
 		if err != nil {
 			return "", Stats{}, fmt.Errorf("%w: %v", ErrUnknownCompression, err)
 		}

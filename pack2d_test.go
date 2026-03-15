@@ -411,6 +411,54 @@ func TestWithCompressionLevel(t *testing.T) {
 	}
 }
 
+func TestCompressionLevelAffectsOutput(t *testing.T) {
+	// Use highly compressible data so min vs max level produces different output sizes.
+	data := []byte(strings.Repeat(`{"patient":"John Smith","id":"12345","status":"active","score":98.6}`, 50))
+
+	tests := []struct {
+		name    string
+		algo    CompressionType
+		loLevel int
+		hiLevel int
+	}{
+		{"zlib", Zlib, 1, 9},
+		{"zstd", Zstd, 1, 19},
+		{"brotli", Brotli, 0, 11},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			loEncoded, loStats, err := Encode(data,
+				WithCompression(tt.algo),
+				WithCompressionLevel(tt.loLevel),
+			)
+			require.NoError(t, err)
+
+			hiEncoded, hiStats, err := Encode(data,
+				WithCompression(tt.algo),
+				WithCompressionLevel(tt.hiLevel),
+			)
+			require.NoError(t, err)
+
+			// Different levels must produce different encoded output.
+			assert.NotEqual(t, loEncoded, hiEncoded,
+				"%s: level %d and %d produced identical output", tt.name, tt.loLevel, tt.hiLevel)
+
+			// Compressed sizes must differ (proving the level is actually used).
+			assert.NotEqual(t, loStats.CompressedBytes, hiStats.CompressedBytes,
+				"%s: level %d and %d produced identical compressed size", tt.name, tt.loLevel, tt.hiLevel)
+
+			// Both must round-trip correctly.
+			loDecoded, _, err := Decode(loEncoded)
+			require.NoError(t, err)
+			assert.Equal(t, data, loDecoded)
+
+			hiDecoded, _, err := Decode(hiEncoded)
+			require.NoError(t, err)
+			assert.Equal(t, data, hiDecoded)
+		})
+	}
+}
+
 func TestWithBarcodeAndImageOptions(t *testing.T) {
 	// Smoke-test that option setters reach the barcode generator.
 	imgData, _, err := GenerateBarcode(

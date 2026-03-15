@@ -61,6 +61,21 @@ func (r *Registry) GetByName(name string) (Compressor, error) {
 	return c, nil
 }
 
+// NewCompressor creates a compressor by algorithm name and compression level.
+// This bypasses the registry to allow per-call level configuration.
+func NewCompressor(name string, level int) (Compressor, error) {
+	switch name {
+	case "zlib":
+		return NewZlib(level), nil
+	case "zstd":
+		return NewZstd(level, nil)
+	case "brotli":
+		return NewBrotli(level), nil
+	default:
+		return nil, fmt.Errorf("%w: name=%q", ErrUnknownCompressor, name)
+	}
+}
+
 // DefaultRegistry returns a Registry pre-loaded with zlib, zstd, and brotli compressors.
 func DefaultRegistry() *Registry {
 	r := NewRegistry()
